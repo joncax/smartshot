@@ -5,7 +5,6 @@
 const DEFAULTS = {
   format: 'jpg', scale: '1x', action: 'file',
   delay: 0, maxHeight: 30000, autoPreview: false,
-  historyMax: 10, hiddenSelectors: ''
 };
 
 const els = {
@@ -14,7 +13,6 @@ const els = {
   maxHeight:       document.getElementById('inp-maxheight'),
   delay:           document.getElementById('inp-delay'),
   autoPreview:     document.getElementById('chk-preview'),
-  hiddenSelectors: document.getElementById('txt-selectors'),
   btnSave:         document.getElementById('btn-save'),
   savedMsg:        document.getElementById('saved-msg'),
 };
@@ -27,7 +25,6 @@ async function load() {
   els.maxHeight.value       = s.maxHeight;
   els.delay.value           = s.delay;
   els.autoPreview.checked   = !!s.autoPreview;
-  els.hiddenSelectors.value = s.hiddenSelectors || '';
 }
 
 function showMsg(text, type) {
@@ -46,7 +43,6 @@ els.btnSave.addEventListener('click', async () => {
     maxHeight:       Number(els.maxHeight.value) || 30000,
     delay:           Number(els.delay.value) || 0,
     autoPreview:     els.autoPreview.checked,
-    hiddenSelectors: els.hiddenSelectors.value.trim(),
   };
 
   try {

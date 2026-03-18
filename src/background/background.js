@@ -64,7 +64,6 @@ async function triggerCapture() {
       maxHeight:       settings.maxHeight,
       format:          settings.format,
       delay:           settings.delay || 0,
-      hiddenSelectors: parseSelectors(settings.hiddenSelectors || ''),
     },
   }, async (response) => {
     if (!response?.ok) return;
@@ -177,10 +176,6 @@ function resolveScaleNumber(scale) {
   return scale === '2x' ? 2 : scale === '1.5x' ? 1.5 : 1;
 }
 
-function parseSelectors(str) {
-  if (!str) return [];
-  return str.split(',').map((s) => s.trim()).filter(Boolean);
-}
 
 async function getSettings() {
   const stored = await chrome.storage.sync.get('settings');

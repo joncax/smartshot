@@ -188,22 +188,6 @@ describe('addToHistory', () => {
   });
 });
 
-// ─── parseSelectors (inline helper tested via logic) ──────────────────────────
-// parseSelectors lives in popup.js (not utils.js) — tested here as pure logic
-
-describe('parseSelectors logic', () => {
-  function parseSelectors(str) {
-    if (!str) return [];
-    return str.split(',').map((s) => s.trim()).filter(Boolean);
-  }
-
-  test('returns empty array for empty string',     () => expect(parseSelectors('')).toEqual([]));
-  test('returns empty array for null',             () => expect(parseSelectors(null)).toEqual([]));
-  test('parses single selector',                   () => expect(parseSelectors('#cookie-banner')).toEqual(['#cookie-banner']));
-  test('parses multiple selectors',                () => expect(parseSelectors('#cookie, .chat, [id*="gdpr"]')).toEqual(['#cookie', '.chat', '[id*="gdpr"]']));
-  test('trims whitespace from each selector',      () => expect(parseSelectors('  #a  ,  .b  ')).toEqual(['#a', '.b']));
-  test('filters out empty entries from commas',    () => expect(parseSelectors('#a,,#b')).toEqual(['#a', '#b']));
-});
 
 // ─── buildHistoryEntry — extended ────────────────────────────────────────────
 

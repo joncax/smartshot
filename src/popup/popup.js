@@ -77,7 +77,6 @@ async function startCapture() {
   }
 
   const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-  const hiddenSelectors = parseSelectors(settings.hiddenSelectors || '');
 
   // ── Area mode ─────────────────────────────────────────────────────────────
   if (captureMode === 'area') {
@@ -90,7 +89,7 @@ async function startCapture() {
     await chrome.storage.session.set({
       pendingAreaCapture: {
         dest:     currentDest,
-        settings: { ...settings, hiddenSelectors },
+        settings: { ...settings},
         url:      tab.url,
         needsClipboard: currentDest === 'clipboard' || currentDest === 'both',
       }
@@ -103,7 +102,6 @@ async function startCapture() {
       options: {
         scale:           settings.scale === '2x' ? 2 : settings.scale === '1.5x' ? 1.5 : 1,
         format:          settings.format,
-        hiddenSelectors,
       },
     });
 
@@ -133,7 +131,6 @@ async function startCapture() {
           maxHeight:       settings.maxHeight,
           format:          settings.format,
           delay:           settings.delay || 0,
-          hiddenSelectors,
         },
       }, resolve);
     });
@@ -185,12 +182,6 @@ async function copyToClipboard(dataUrl) {
   await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function parseSelectors(str) {
-  if (!str) return [];
-  return str.split(',').map((s) => s.trim()).filter(Boolean);
-}
 
 // ─── History ──────────────────────────────────────────────────────────────────
 

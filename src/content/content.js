@@ -25,22 +25,6 @@
     });
   }
 
-  // ─── CSS element hiding ─────────────────────────────────────────────────────
-
-  function hideSelectors(selectors) {
-    if (!selectors || selectors.length === 0) return () => {};
-    const hidden = [];
-    selectors.forEach((sel) => {
-      try {
-        document.querySelectorAll(sel).forEach((el) => {
-          hidden.push({ el, display: el.style.display });
-          el.style.display = 'none';
-        });
-      } catch (_) {}
-    });
-    return () => hidden.forEach(({ el, display }) => (el.style.display = display));
-  }
-
   // ─── Fixed/sticky element helpers ───────────────────────────────────────────
 
   function getFixedElements() {
@@ -161,14 +145,11 @@
   // ─── Area capture ────────────────────────────────────────────────────────────
 
   async function captureArea(options = {}) {
-    const { format = 'jpg', scale = 1, hiddenSelectors = [] } = options;
-
-    const restoreSelectors = hideSelectors(hiddenSelectors);
+    const { format = 'jpg', scale = 1 } = options;
 
     let rect;
     try { rect = await selectArea(); }
     catch (err) {
-      restoreSelectors();
       // Notify background of failure
       chrome.runtime.sendMessage({ type: 'AREA_CAPTURE_RESULT', ok: false, error: err.message });
       return;
@@ -176,7 +157,6 @@
 
     await sleep(80);
     const dataUrl = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE' });
-    restoreSelectors();
 
     const img = await loadImage(dataUrl);
     const dpr = window.devicePixelRatio || 1;
@@ -200,11 +180,9 @@
   // ─── Full page capture ───────────────────────────────────────────────────────
 
   async function captureFullPage(options = {}) {
-    const { scale = 1, maxHeight = 30000, format = 'jpg', delay = 0, hiddenSelectors = [] } = options;
+    const { scale = 1, maxHeight = 30000, format = 'jpg', delay = 0 } = options;
 
     if (delay > 0) await showCountdown(delay);
-
-    const restoreSelectors = hideSelectors(hiddenSelectors);
     await sleep(80);
 
     const scrollX   = window.scrollX;
@@ -233,7 +211,6 @@
 
     sendProgress(92);
     restoreFixed(fixedEls);
-    restoreSelectors();
     window.scrollTo(scrollX, scrollY);
 
     if (truncated) showMaxHeightWarning();

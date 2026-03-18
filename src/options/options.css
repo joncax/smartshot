@@ -16,7 +16,8 @@ select,input[type=number],textarea{background:var(--surface);color:var(--text);b
 select:focus,input:focus,textarea:focus{border-color:var(--accent)}
 textarea{resize:vertical;min-height:64px;width:100%;line-height:1.5}
 input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0}
-.btn-save{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;margin-top:8px}
+.save-row{max-width:472px;margin:8px auto 0}
+.btn-save{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s}
 .btn-save:hover{opacity:.88}
 .btn-save:disabled{opacity:.5;cursor:not-allowed}
 .saved-msg{text-align:center;font-size:13px;margin-top:10px;min-height:20px}
