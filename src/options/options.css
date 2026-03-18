@@ -1,0 +1,27 @@
+:root {
+  --bg:#0f1117; --bg2:#1a1d27; --surface:#22263a;
+  --border:#2e3350; --accent:#4f7fff; --text:#e8eaf6;
+  --muted:#8b90b0; --success:#34c77b; --danger:#ff5c5c; --radius:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+.page{max-width:520px;margin:0 auto;padding:32px 24px}
+.logo{display:flex;align-items:center;gap:8px;color:var(--accent);font-size:20px;font-weight:700;margin-bottom:28px}
+.section{margin-bottom:24px}
+.section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px}
+.field{display:flex;align-items:flex-start;justify-content:space-between;padding:10px 14px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px;gap:12px}
+.field label{color:var(--text);padding-top:2px}
+.field-desc{font-size:12px;color:var(--muted);margin-top:3px}
+select,input[type=number],textarea{background:var(--surface);color:var(--text);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;outline:none;font-family:inherit}
+select:focus,input:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:64px;width:100%;line-height:1.5}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0}
+.btn-save{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;margin-top:8px}
+.btn-save:hover{opacity:.88}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+.saved-msg{text-align:center;font-size:13px;margin-top:10px;min-height:20px}
+.saved-msg.ok{color:var(--success)}
+.saved-msg.error{color:var(--danger)}
+.divider{border:none;border-top:0.5px solid var(--border);margin:20px 0}
+.donate-section{text-align:center;color:var(--muted);font-size:13px}
+.donate-section a{color:var(--accent);text-decoration:none}

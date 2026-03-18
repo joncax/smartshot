@@ -187,3 +187,61 @@ describe('addToHistory', () => {
     expect(result[0].domain).toBe('first.com');
   });
 });
+
+// ─── parseSelectors (inline helper tested via logic) ──────────────────────────
+// parseSelectors lives in popup.js (not utils.js) — tested here as pure logic
+
+describe('parseSelectors logic', () => {
+  function parseSelectors(str) {
+    if (!str) return [];
+    return str.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+
+  test('returns empty array for empty string',     () => expect(parseSelectors('')).toEqual([]));
+  test('returns empty array for null',             () => expect(parseSelectors(null)).toEqual([]));
+  test('parses single selector',                   () => expect(parseSelectors('#cookie-banner')).toEqual(['#cookie-banner']));
+  test('parses multiple selectors',                () => expect(parseSelectors('#cookie, .chat, [id*="gdpr"]')).toEqual(['#cookie', '.chat', '[id*="gdpr"]']));
+  test('trims whitespace from each selector',      () => expect(parseSelectors('  #a  ,  .b  ')).toEqual(['#a', '.b']));
+  test('filters out empty entries from commas',    () => expect(parseSelectors('#a,,#b')).toEqual(['#a', '#b']));
+});
+
+// ─── buildHistoryEntry — extended ────────────────────────────────────────────
+
+describe('buildHistoryEntry — extended', () => {
+  test('bytes value matches input', () => {
+    const e = buildHistoryEntry('https://example.com', 'example.jpg', 'jpg', 512000);
+    expect(e.bytes).toBe(512000);
+  });
+
+  test('format stored correctly', () => {
+    const e = buildHistoryEntry('https://example.com', 'example.png', 'png', 1024);
+    expect(e.format).toBe('png');
+  });
+
+  test('filename stored correctly', () => {
+    const filename = 'example.com_2026-03-18_1430.jpg';
+    const e = buildHistoryEntry('https://example.com', filename, 'jpg', 1024);
+    expect(e.filename).toBe(filename);
+  });
+});
+
+// ─── addToHistory — extended ──────────────────────────────────────────────────
+
+describe('addToHistory — extended', () => {
+  const makeEntry = (domain) => buildHistoryEntry(`https://${domain}.com`, `${domain}.jpg`, 'jpg', 1024);
+
+  test('respects custom maxEntries of 3', () => {
+    const h = [makeEntry('a'), makeEntry('b'), makeEntry('c')];
+    const result = addToHistory(h, makeEntry('d'), 3);
+    expect(result.length).toBe(3);
+    expect(result[0].domain).toBe('d.com');
+    expect(result[2].domain).toBe('b.com');
+  });
+
+  test('maxEntries of 1 keeps only newest', () => {
+    const h = [makeEntry('old')];
+    const result = addToHistory(h, makeEntry('new'), 1);
+    expect(result.length).toBe(1);
+    expect(result[0].domain).toBe('new.com');
+  });
+});

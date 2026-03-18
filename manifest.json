@@ -2,40 +2,34 @@
   "manifest_version": 3,
   "name": "SmartShot",
   "version": "0.1.0",
-  "description": "Full-page screenshot to JPG/PNG — 100% local, no data stored, no account needed.",
-
+  "description": "Full-page screenshot to JPG/PNG \u2014 100% local, no data stored, no account needed.",
   "permissions": [
     "activeTab",
     "scripting",
     "downloads",
     "storage"
   ],
-
   "host_permissions": [
     "<all_urls>"
   ],
-
   "action": {
     "default_popup": "src/popup/popup.html",
     "default_icon": {
-      "16":  "icons/icon16.png",
-      "32":  "icons/icon32.png",
-      "48":  "icons/icon48.png",
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
     "default_title": "SmartShot"
   },
-
   "background": {
     "service_worker": "src/background/background.js",
     "type": "module"
   },
-
   "options_ui": {
     "page": "src/options/options.html",
     "open_in_tab": true
   },
-
   "commands": {
     "capture-page": {
       "suggested_key": {
@@ -45,13 +39,11 @@
       "description": "Capture full page screenshot"
     }
   },
-
   "icons": {
-    "16":  "icons/icon16.png",
-    "32":  "icons/icon32.png",
-    "48":  "icons/icon48.png",
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-
   "default_locale": "en"
 }

@@ -1,21 +1,34 @@
 /**
- * SmartShot — Popup script (Phase 2)
- * Adds: history panel, delay awareness, clipboard, format badge.
+ * SmartShot — Popup script (Phase 3 — fixed)
+ * Fixes: area capture closes popup too early, settings not loading.
  */
 
-import { isCapturableUrl, formatBytes } from '../utils.js';
+import { isCapturableUrl } from '../utils.js';
 
 const $ = (id) => document.getElementById(id);
 
-const btnCapture    = $('btn-capture');
-const btnLabel      = $('btn-label');
-const progressWrap  = $('progress-wrap');
-const progressFill  = $('progress-fill');
-const progressLbl   = $('progress-label');
-const statusEl      = $('status');
+const btnCapture     = $('btn-capture');
+const btnLabel       = $('btn-label');
+const progressWrap   = $('progress-wrap');
+const progressFill   = $('progress-fill');
+const progressLbl    = $('progress-label');
+const statusEl       = $('status');
 const historySection = $('history-section');
-const historyList   = $('history-list');
-const btnClearHist  = $('btn-clear-history');
+const historyList    = $('history-list');
+const btnClearHist   = $('btn-clear-history');
+
+// ─── Capture mode ─────────────────────────────────────────────────────────────
+
+let captureMode = 'full';
+
+document.querySelectorAll('.mode-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    captureMode = btn.dataset.mode;
+    btnLabel.textContent = captureMode === 'area' ? 'Select Area' : 'Capture Full Page';
+  });
+});
 
 // ─── Destination toggles ──────────────────────────────────────────────────────
 
@@ -64,15 +77,44 @@ async function startCapture() {
   }
 
   const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
+  const hiddenSelectors = parseSelectors(settings.hiddenSelectors || '');
 
-  // Show delay info in button if delay > 0
-  if (settings.delay > 0) {
-    btnLabel.textContent = `Starting in ${settings.delay}s…`;
-  } else {
-    btnLabel.textContent = 'Capturing…';
+  // ── Area mode ─────────────────────────────────────────────────────────────
+  if (captureMode === 'area') {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['src/content/content.js'],
+    });
+
+    // Store pending info (dest, settings, url) for background to use
+    await chrome.storage.session.set({
+      pendingAreaCapture: {
+        dest:     currentDest,
+        settings: { ...settings, hiddenSelectors },
+        url:      tab.url,
+        needsClipboard: currentDest === 'clipboard' || currentDest === 'both',
+      }
+    });
+
+    // Ask content script to start area selection — it will send
+    // AREA_CAPTURE_RESULT to background when done.
+    chrome.tabs.sendMessage(tab.id, {
+      type: 'START_AREA_CAPTURE',
+      options: {
+        scale:           settings.scale === '2x' ? 2 : settings.scale === '1.5x' ? 1.5 : 1,
+        format:          settings.format,
+        hiddenSelectors,
+      },
+    });
+
+    // Close popup AFTER message is sent
+    window.close();
+    return;
   }
 
+  // ── Full page mode ─────────────────────────────────────────────────────────
   btnCapture.disabled = true;
+  btnLabel.textContent = settings.delay > 0 ? `Starting in ${settings.delay}s…` : 'Capturing…';
   progressWrap.classList.remove('hidden');
   statusEl.classList.add('hidden');
   setProgress(0);
@@ -87,22 +129,21 @@ async function startCapture() {
       chrome.tabs.sendMessage(tab.id, {
         type: 'START_CAPTURE',
         options: {
-          scale:     settings.scale === '2x' ? 2 : settings.scale === '1.5x' ? 1.5 : 1,
-          maxHeight: settings.maxHeight,
-          format:    settings.format,
-          delay:     settings.delay,
+          scale:           settings.scale === '2x' ? 2 : settings.scale === '1.5x' ? 1.5 : 1,
+          maxHeight:       settings.maxHeight,
+          format:          settings.format,
+          delay:           settings.delay || 0,
+          hiddenSelectors,
         },
       }, resolve);
     });
 
     if (!response?.ok) throw new Error(response?.error ?? 'Capture failed');
 
-    // Clipboard (needs to run in popup context — user gesture)
     if (currentDest === 'clipboard' || currentDest === 'both') {
       await copyToClipboard(response.dataUrl);
     }
 
-    // Save to file via background
     await chrome.runtime.sendMessage({
       type:     'SAVE_SCREENSHOT',
       dataUrl:  response.dataUrl,
@@ -119,7 +160,7 @@ async function startCapture() {
   } catch (err) {
     showStatus(`Error: ${err.message}`, 'error');
   } finally {
-    btnCapture.disabled = false;
+    btnCapture.disabled  = false;
     btnLabel.textContent = 'Capture Full Page';
     setTimeout(() => progressWrap.classList.add('hidden'), 1500);
   }
@@ -128,9 +169,7 @@ async function startCapture() {
 // ─── Clipboard ────────────────────────────────────────────────────────────────
 
 async function copyToClipboard(dataUrl) {
-  // Clipboard API only supports image/png — convert if needed
   let pngUrl = dataUrl;
-
   if (!dataUrl.startsWith('data:image/png')) {
     const img    = await createImageBitmap(await (await fetch(dataUrl)).blob());
     const canvas = new OffscreenCanvas(img.width, img.height);
@@ -142,10 +181,15 @@ async function copyToClipboard(dataUrl) {
       reader.readAsDataURL(pngBlob);
     });
   }
-
-  const res  = await fetch(pngUrl);
-  const blob = await res.blob();
+  const blob = await (await fetch(pngUrl)).blob();
   await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function parseSelectors(str) {
+  if (!str) return [];
+  return str.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
@@ -156,22 +200,18 @@ async function loadHistory() {
     historySection.classList.add('hidden');
     return;
   }
-
   historySection.classList.remove('hidden');
   historyList.innerHTML = '';
-
   history.slice(0, 5).forEach((entry) => {
     const item = document.createElement('div');
     item.className = 'history-item';
-
     const time = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
     item.innerHTML = `
       <span class="history-domain" title="${entry.filename}">${entry.domain}</span>
       <span class="history-meta">
         ${entry.size}
         <span class="history-badge">${entry.format}</span>
-        <span class="history-meta" style="margin-left:4px">${time}</span>
+        <span style="margin-left:4px">${time}</span>
       </span>
     `;
     historyList.appendChild(item);
