@@ -1,40 +1,67 @@
 /**
- * SmartShot — Content Script
- * Injected into the active tab. Handles scroll, frame capture, and canvas assembly.
+ * SmartShot — Content Script (Phase 2)
+ * Adds: configurable delay with countdown overlay, improved fixed element handling.
  */
 
 ;(function () {
   'use strict';
 
-  // Prevent double-injection
   if (window.__smartshotActive) return;
   window.__smartshotActive = true;
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+  // ─── Countdown overlay ──────────────────────────────────────────────────────
 
-  /** Collect all elements with position:fixed or position:sticky */
+  function showCountdown(seconds) {
+    return new Promise((resolve) => {
+      if (seconds <= 0) return resolve();
+
+      const overlay = document.createElement('div');
+      overlay.id = '__smartshot_countdown';
+      overlay.style.cssText = `
+        position:fixed; top:20px; right:20px; z-index:2147483647;
+        background:rgba(15,17,23,0.88); color:#fff;
+        font:600 28px/1 system-ui,sans-serif;
+        padding:14px 22px; border-radius:12px;
+        border:1.5px solid rgba(79,127,255,0.6);
+        pointer-events:none; letter-spacing:-.5px;
+      `;
+
+      document.body.appendChild(overlay);
+
+      let remaining = seconds;
+      overlay.textContent = `SmartShot captures in ${remaining}s`;
+
+      const iv = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(iv);
+          overlay.remove();
+          resolve();
+        } else {
+          overlay.textContent = `SmartShot captures in ${remaining}s`;
+        }
+      }, 1000);
+    });
+  }
+
+  // ─── Fixed/sticky element helpers ───────────────────────────────────────────
+
   function getFixedElements() {
     const fixed = [];
     document.querySelectorAll('*').forEach((el) => {
-      const style = window.getComputedStyle(el);
-      if (style.position === 'fixed' || style.position === 'sticky') {
+      const s = window.getComputedStyle(el);
+      if (s.position === 'fixed' || s.position === 'sticky') {
         fixed.push({ el, originalVisibility: el.style.visibility });
       }
     });
     return fixed;
   }
 
-  function hideFixed(fixedEls) {
-    fixedEls.forEach(({ el }) => (el.style.visibility = 'hidden'));
-  }
+  function hideFixed(els) { els.forEach(({ el }) => (el.style.visibility = 'hidden')); }
+  function restoreFixed(els) { els.forEach(({ el, originalVisibility }) => (el.style.visibility = originalVisibility)); }
 
-  function restoreFixed(fixedEls) {
-    fixedEls.forEach(({ el, originalVisibility }) => {
-      el.style.visibility = originalVisibility;
-    });
-  }
+  // ─── Progress ────────────────────────────────────────────────────────────────
 
-  /** Send progress update to popup via background */
   function sendProgress(percent) {
     chrome.runtime.sendMessage({ type: 'CAPTURE_PROGRESS', percent });
   }
@@ -42,51 +69,45 @@
   // ─── Main capture ────────────────────────────────────────────────────────────
 
   async function captureFullPage(options = {}) {
-    const {
-      scale     = 1,
-      maxHeight = 30000,
-      format    = 'jpg',
-    } = options;
+    const { scale = 1, maxHeight = 30000, format = 'jpg', delay = 0 } = options;
 
-    const scrollX   = window.scrollX;
-    const scrollY   = window.scrollY;
-    const totalH    = Math.min(document.body.scrollHeight, maxHeight);
-    const viewW     = window.innerWidth;
-    const viewH     = window.innerHeight;
+    // Delay with visible countdown
+    if (delay > 0) await showCountdown(delay);
 
-    // Hide fixed/sticky elements so they don't repeat on every frame
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const totalH  = Math.min(document.body.scrollHeight, maxHeight);
+    const viewW   = window.innerWidth;
+    const viewH   = window.innerHeight;
+
     const fixedEls = getFixedElements();
     hideFixed(fixedEls);
 
-    // Scroll to top before starting
     window.scrollTo(0, 0);
-    await sleep(120);
+    await sleep(150);
 
-    const frames   = [];
-    let   captured = 0;
+    const frames  = [];
+    let captured  = 0;
 
     while (captured < totalH) {
-      sendProgress(Math.round((captured / totalH) * 90));
+      sendProgress(Math.round((captured / totalH) * 88));
 
-      // Ask background to capture the visible viewport
       const dataUrl = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE' });
       frames.push({ dataUrl, y: captured });
 
       captured += viewH;
       if (captured < totalH) {
         window.scrollTo(0, captured);
-        await sleep(150); // allow paint
+        await sleep(160);
       }
     }
 
     sendProgress(92);
 
-    // Restore everything
     restoreFixed(fixedEls);
     window.scrollTo(scrollX, scrollY);
 
-    // Stitch frames on a canvas
-    const canvas   = await stitchFrames(frames, viewW, totalH, viewH, scale);
+    const canvas = await stitchFrames(frames, viewW, totalH, viewH, scale);
     sendProgress(98);
 
     const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
@@ -94,14 +115,12 @@
     const result   = canvas.toDataURL(mimeType, quality);
 
     sendProgress(100);
-
-    // Clean up flag
     delete window.__smartshotActive;
 
     return result;
   }
 
-  // ─── Canvas stitching ───────────────────────────────────────────────────────
+  // ─── Canvas stitching ────────────────────────────────────────────────────────
 
   function stitchFrames(frames, viewW, totalH, viewH, scale) {
     return new Promise((resolve) => {
@@ -114,39 +133,27 @@
       frames.forEach(({ dataUrl, y }) => {
         const img = new Image();
         img.onload = () => {
-          // Each frame covers one viewport height; last frame may be partial
-          const destY     = Math.round(y * scale);
-          const srcH      = Math.min(viewH, totalH - y);
-          const destH     = Math.round(srcH * scale);
-
-          ctx.drawImage(
-            img,
-            0, 0, img.width, Math.round(srcH * scale),   // src rect
-            0, destY, canvas.width, destH                  // dest rect
-          );
-
-          loaded++;
-          if (loaded === frames.length) resolve(canvas);
+          const destY = Math.round(y * scale);
+          const srcH  = Math.min(viewH, totalH - y);
+          const destH = Math.round(srcH * scale);
+          ctx.drawImage(img, 0, 0, img.width, Math.round(srcH * scale), 0, destY, canvas.width, destH);
+          if (++loaded === frames.length) resolve(canvas);
         };
         img.src = dataUrl;
       });
     });
   }
 
-  // ─── Utils ──────────────────────────────────────────────────────────────────
+  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-  function sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-  }
-
-  // ─── Message listener ───────────────────────────────────────────────────────
+  // ─── Message listener ────────────────────────────────────────────────────────
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === 'START_CAPTURE') {
       captureFullPage(msg.options)
         .then((dataUrl) => sendResponse({ ok: true, dataUrl }))
         .catch((err)   => sendResponse({ ok: false, error: err.message }));
-      return true; // keep channel open for async response
+      return true;
     }
   });
 

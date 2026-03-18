@@ -207,3 +207,81 @@ body {
 /* ── Utility ─────────────────────────────────────────── */
 
 .hidden { display: none !important; }
+
+/* ── History ─────────────────────────────────────────── */
+
+.history-section {
+  border-top: 0.5px solid var(--border);
+  padding-top: 8px;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  transition: color .15s;
+}
+.link-btn:hover { color: var(--danger); }
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.history-domain {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.history-meta {
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.history-badge {
+  display: inline-block;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--muted);
+  margin-left: 4px;
+  text-transform: uppercase;
+}

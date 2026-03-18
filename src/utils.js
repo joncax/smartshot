@@ -86,11 +86,70 @@ export function formatBytes(bytes) {
  */
 export function defaultSettings() {
   return {
-    format:     'jpg',
-    scale:      '1x',
-    action:     'file',   // 'file' | 'clipboard' | 'both'
-    delay:      0,        // seconds before capture starts
-    maxHeight:  30000,    // px — prevents infinite scroll loops
+    format:      'jpg',
+    scale:       '1x',
+    action:      'file',  // 'file' | 'clipboard' | 'both'
+    delay:       0,       // seconds before capture starts
+    maxHeight:   30000,   // px — prevents infinite scroll loops
     autoPreview: false,
+    historyMax:  10,      // max entries kept in local history
   };
+}
+
+/**
+ * Converts a dataURL to a Blob.
+ * @param {string} dataUrl
+ * @returns {Blob}
+ */
+export function dataUrlToBlob(dataUrl) {
+  const [header, data] = dataUrl.split(',');
+  const mime    = header.match(/:(.*?);/)[1];
+  const binary  = atob(data);
+  const bytes   = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+/**
+ * Returns a human-readable label for an action value.
+ * @param {'file'|'clipboard'|'both'} action
+ * @returns {string}
+ */
+export function actionLabel(action) {
+  const labels = { file: 'Save to file', clipboard: 'Copy to clipboard', both: 'Save + Copy' };
+  return labels[action] ?? 'Unknown';
+}
+
+/**
+ * Builds a history entry object.
+ * @param {string} url       - Page URL captured
+ * @param {string} filename  - Generated filename
+ * @param {string} format    - 'jpg' | 'png' | 'pdf'
+ * @param {number} bytes     - File size in bytes
+ * @param {Date}   date      - Capture date (default: now)
+ * @returns {object}
+ */
+export function buildHistoryEntry(url, filename, format, bytes, date = new Date()) {
+  return {
+    id:        `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    url,
+    filename,
+    format,
+    bytes,
+    size:      formatBytes(bytes),
+    timestamp: date.toISOString(),
+    domain:    (() => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'page'; } })(),
+  };
+}
+
+/**
+ * Adds an entry to the history array, trimming to maxEntries.
+ * Returns a NEW array (pure — does not mutate input).
+ * @param {object[]} history
+ * @param {object}   entry
+ * @param {number}   maxEntries
+ * @returns {object[]}
+ */
+export function addToHistory(history, entry, maxEntries = 10) {
+  return [entry, ...history].slice(0, maxEntries);
 }
