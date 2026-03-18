@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SmartShot",
-  "version": "0.1.0",
-  "description": "Full-page screenshot to JPG/PNG \u2014 100% local, no data stored, no account needed.",
+  "version": "1.0.0",
+  "description": "Full-page screenshot to JPG/PNG \u2014 100% local, no account, no data stored, no cloud.",
   "permissions": [
     "activeTab",
     "scripting",
