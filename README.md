@@ -121,7 +121,7 @@ smartshot/
 
 SmartShot is free and always will be. If it saves you time, consider:
 
-- ☕ [Ko-fi](https://ko-fi.com) — one-time coffee, no account needed
+- ☕ [Ko-fi](https://ko-fi.com/joncardoso) — one-time coffee, no account needed
 - 💙 [PayPal](https://paypal.com) — direct donation
 - ⭐ **Star the repository** — it really helps discoverability!
 
