@@ -11,8 +11,7 @@
   },
   "jest": {
     "testEnvironment":  "node",
-    "transform":        {},
-    "extensionsToTreatAsEsm": [".js"]
+    "transform":        {}
   },
   "devDependencies": {
     "jest": "^29.7.0"
