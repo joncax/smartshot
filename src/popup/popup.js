@@ -128,7 +128,22 @@ async function startCapture() {
 // ─── Clipboard ────────────────────────────────────────────────────────────────
 
 async function copyToClipboard(dataUrl) {
-  const res  = await fetch(dataUrl);
+  // Clipboard API only supports image/png — convert if needed
+  let pngUrl = dataUrl;
+
+  if (!dataUrl.startsWith('data:image/png')) {
+    const img    = await createImageBitmap(await (await fetch(dataUrl)).blob());
+    const canvas = new OffscreenCanvas(img.width, img.height);
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const pngBlob = await canvas.convertToBlob({ type: 'image/png' });
+    pngUrl = await new Promise((res) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.readAsDataURL(pngBlob);
+    });
+  }
+
+  const res  = await fetch(pngUrl);
   const blob = await res.blob();
   await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
 }
