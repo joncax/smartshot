@@ -86,7 +86,7 @@ async function startCapture() {
     });
 
     // Store pending info (dest, settings, url) for background to use
-    await chrome.storage.session.set({
+    await chrome.storage.local.set({
       pendingAreaCapture: {
         dest:     currentDest,
         settings: { ...settings},
@@ -197,14 +197,32 @@ async function loadHistory() {
     const item = document.createElement('div');
     item.className = 'history-item';
     const time = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    item.innerHTML = `
-      <span class="history-domain" title="${entry.filename}">${entry.domain}</span>
-      <span class="history-meta">
-        ${entry.size}
-        <span class="history-badge">${entry.format}</span>
-        <span style="margin-left:4px">${time}</span>
-      </span>
-    `;
+
+    // Build DOM safely — no innerHTML with dynamic values
+    const domain = document.createElement('span');
+    domain.className = 'history-domain';
+    domain.title = entry.filename;
+    domain.textContent = entry.domain;
+
+    const meta = document.createElement('span');
+    meta.className = 'history-meta';
+
+    const sizeText = document.createTextNode(entry.size + ' ');
+
+    const badge = document.createElement('span');
+    badge.className = 'history-badge';
+    badge.textContent = entry.format;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.style.marginLeft = '4px';
+    timeSpan.textContent = time;
+
+    meta.appendChild(sizeText);
+    meta.appendChild(badge);
+    meta.appendChild(timeSpan);
+
+    item.appendChild(domain);
+    item.appendChild(meta);
     historyList.appendChild(item);
   });
 }

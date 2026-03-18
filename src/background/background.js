@@ -76,10 +76,10 @@ async function triggerCapture() {
 async function handleAreaCaptureResult(msg, senderTab) {
   if (!msg.ok || !msg.dataUrl) return;
 
-  const stored  = await chrome.storage.session.get('pendingAreaCapture');
+  const stored  = await chrome.storage.local.get('pendingAreaCapture');
   const pending = stored.pendingAreaCapture;
   if (!pending) return;
-  await chrome.storage.session.remove('pendingAreaCapture');
+  await chrome.storage.local.remove('pendingAreaCapture');
 
   const settings       = pending.settings || await getSettings();
   const dest           = pending.dest || 'file';
