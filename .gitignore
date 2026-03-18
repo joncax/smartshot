@@ -3,3 +3,5 @@ coverage/
 *.zip
 .DS_Store
 Thumbs.db
+# Windows Zone.Identifier files (created when copying files from Windows to WSL)
+*.Zone.Identifier
