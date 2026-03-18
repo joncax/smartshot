@@ -1,0 +1,22 @@
+{
+  "name": "smartshot",
+  "version": "0.1.0",
+  "description": "Full-page screenshot browser extension — 100% local, no data stored.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test":       "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "test:cover": "node --experimental-vm-modules node_modules/.bin/jest --coverage"
+  },
+  "jest": {
+    "testEnvironment":  "node",
+    "transform":        {},
+    "extensionsToTreatAsEsm": [".js"]
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "keywords": ["browser-extension", "screenshot", "full-page", "privacy"],
+  "license": "MIT"
+}

@@ -1,0 +1,209 @@
+/* SmartShot popup — clean, minimal, dark-accent design */
+
+:root {
+  --bg:        #0f1117;
+  --bg2:       #1a1d27;
+  --surface:   #22263a;
+  --border:    #2e3350;
+  --accent:    #4f7fff;
+  --accent-h:  #6b93ff;
+  --success:   #34c77b;
+  --danger:    #ff5c5c;
+  --text:      #e8eaf6;
+  --muted:     #8b90b0;
+  --radius:    8px;
+  --radius-lg: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 280px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  user-select: none;
+}
+
+.container {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+}
+
+.logo-text {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  color: var(--text);
+}
+
+.icon-btn {
+  color: var(--muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color .15s, background .15s;
+}
+
+.icon-btn:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+/* ── Capture button ──────────────────────────────────── */
+
+.btn-capture {
+  width: 100%;
+  padding: 11px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .15s, transform .1s;
+}
+
+.btn-capture:hover  { background: var(--accent-h); }
+.btn-capture:active { transform: scale(0.98); }
+
+.btn-capture:disabled {
+  background: var(--surface);
+  color: var(--muted);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Progress ────────────────────────────────────────── */
+
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--surface);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width .2s ease;
+}
+
+.progress-label {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* ── Destination toggles ─────────────────────────────── */
+
+.dest-row {
+  display: flex;
+  gap: 6px;
+}
+
+.dest-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 4px;
+  background: var(--bg2);
+  color: var(--muted);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.dest-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.dest-btn.active {
+  background: rgba(79, 127, 255, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Status ──────────────────────────────────────────── */
+
+.status {
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  text-align: center;
+}
+
+.status.ok    { background: rgba(52,199,123,.12); color: var(--success); }
+.status.error { background: rgba(255,92,92,.12);  color: var(--danger); }
+
+/* ── Footer ──────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 0.5px solid var(--border);
+}
+
+.hint {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.donate-link {
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .15s;
+}
+
+.donate-link:hover { color: var(--text); }
+
+/* ── Utility ─────────────────────────────────────────── */
+
+.hidden { display: none !important; }

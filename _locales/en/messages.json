@@ -1,0 +1,26 @@
+{
+  "extensionName": {
+    "message": "SmartShot",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Full-page screenshot to JPG/PNG — 100% local, no data stored, no account needed.",
+    "description": "Extension description shown in the browser store"
+  },
+  "captureFullPage": {
+    "message": "Capture Full Page",
+    "description": "Main capture button label"
+  },
+  "capturing": {
+    "message": "Capturing…",
+    "description": "Button label while capturing"
+  },
+  "savedOk": {
+    "message": "Screenshot saved!",
+    "description": "Success message"
+  },
+  "errorNotCapturable": {
+    "message": "Cannot capture this page.",
+    "description": "Error shown on browser internal pages"
+  }
+}

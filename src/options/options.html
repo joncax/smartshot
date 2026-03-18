@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartShot — Settings</title>
+  <style>
+    :root {
+      --bg: #0f1117; --bg2: #1a1d27; --surface: #22263a;
+      --border: #2e3350; --accent: #4f7fff; --text: #e8eaf6;
+      --muted: #8b90b0; --success: #34c77b; --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+    .page { max-width: 520px; margin: 0 auto; padding: 32px 24px; }
+    .logo { display: flex; align-items: center; gap: 8px; color: var(--accent); font-size: 20px; font-weight: 700; margin-bottom: 28px; }
+    .section { margin-bottom: 24px; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+    .field { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
+    .field label { color: var(--text); }
+    select, input[type=number] {
+      background: var(--surface); color: var(--text); border: 0.5px solid var(--border);
+      border-radius: 6px; padding: 5px 8px; font-size: 13px; outline: none;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+    .btn-save { width: 100%; padding: 11px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .15s; margin-top: 8px; }
+    .btn-save:hover { opacity: .88; }
+    .saved-msg { text-align: center; color: var(--success); font-size: 13px; margin-top: 10px; display: none; }
+    .divider { border: none; border-top: 0.5px solid var(--border); margin: 20px 0; }
+    .donate-section { text-align: center; color: var(--muted); font-size: 13px; }
+    .donate-section a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="9" width="28" height="30" rx="3" stroke="currentColor" stroke-width="2.5"/>
+      <path d="M34 10 L40 10 L40 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 32 L10 38 L16 38" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M38 32 L38 38 L32 38" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M34 38 L40 38 L40 32" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    SmartShot Settings
+  </div>
+
+  <div class="section">
+    <div class="section-title">Output</div>
+    <div class="field">
+      <label for="sel-format">File format</label>
+      <select id="sel-format">
+        <option value="jpg">JPG (smaller)</option>
+        <option value="png">PNG (best quality)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="sel-scale">Capture scale</label>
+      <select id="sel-scale">
+        <option value="1x">1× (normal)</option>
+        <option value="1.5x">1.5× (sharp)</option>
+        <option value="2x">2× (retina)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Behaviour</div>
+    <div class="field">
+      <label for="inp-maxheight">Max page height (px)</label>
+      <input type="number" id="inp-maxheight" min="5000" max="100000" step="1000" style="width:90px">
+    </div>
+    <div class="field">
+      <label for="inp-delay">Capture delay (seconds)</label>
+      <input type="number" id="inp-delay" min="0" max="10" step="1" style="width:60px">
+    </div>
+  </div>
+
+  <button class="btn-save" id="btn-save">Save settings</button>
+  <div class="saved-msg" id="saved-msg">✓ Settings saved</div>
+
+  <hr class="divider">
+
+  <div class="donate-section">
+    <p>SmartShot is free and open-source. If it saves you time, consider buying me a coffee!</p>
+    <p style="margin-top:8px">
+      <a href="https://ko-fi.com" target="_blank">☕ Ko-fi</a>
+      &nbsp;·&nbsp;
+      <a href="https://paypal.com" target="_blank">💙 PayPal</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com" target="_blank">⭐ GitHub</a>
+    </p>
+  </div>
+</div>
+
+<script type="module">
+import { defaultSettings } from '../utils.js';
+
+const fields = {
+  format:    document.getElementById('sel-format'),
+  scale:     document.getElementById('sel-scale'),
+  maxHeight: document.getElementById('inp-maxheight'),
+  delay:     document.getElementById('inp-delay'),
+};
+
+async function load() {
+  const stored  = await chrome.storage.sync.get('settings');
+  const s       = { ...defaultSettings(), ...(stored.settings ?? {}) };
+  fields.format.value    = s.format;
+  fields.scale.value     = s.scale;
+  fields.maxHeight.value = s.maxHeight;
+  fields.delay.value     = s.delay;
+}
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const s = {
+    format:    fields.format.value,
+    scale:     fields.scale.value,
+    maxHeight: Number(fields.maxHeight.value),
+    delay:     Number(fields.delay.value),
+  };
+  await chrome.storage.sync.set({ settings: s });
+  const msg = document.getElementById('saved-msg');
+  msg.style.display = 'block';
+  setTimeout(() => (msg.style.display = 'none'), 2000);
+});
+
+load();
+</script>
+</body>
+</html>
