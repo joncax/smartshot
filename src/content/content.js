@@ -1,13 +1,20 @@
-/**
- * SmartShot — Content Script (Phase 3 — fixed)
- * Area capture result goes to background (popup may be closed).
- */
-
 ;(function () {
   'use strict';
 
-  if (window.__smartshotActive) return;
-  window.__smartshotActive = true;
+  // ─── Guard: remover overlay anterior e prevenir listeners duplicados ────────
+
+  // Remover overlay de captura anterior se existir
+  document.getElementById('__smartshot_overlay')?.remove();
+
+  // Usar flag no window para evitar listeners duplicados
+  // No Firefox, executeScript re-injeta o IIFE, criando listeners duplicados
+  if (window.__smartshotLoaded) {
+    // Já carregado — apenas resetar estado ativo para permitir nova captura
+    window.__smartshotActive = false;
+    return;
+  }
+  window.__smartshotLoaded = true;
+  window.__smartshotActive = false;
 
   // ─── Countdown overlay ──────────────────────────────────────────────────────
 
@@ -45,6 +52,7 @@
   function selectArea() {
     return new Promise((resolve, reject) => {
       const overlay = document.createElement('div');
+      overlay.id = '__smartshot_overlay';
       overlay.style.cssText = `
         position:fixed;inset:0;z-index:2147483646;
         cursor:crosshair;background:rgba(0,0,0,0.35);
@@ -150,8 +158,11 @@
     let rect;
     try { rect = await selectArea(); }
     catch (err) {
-      // Notify background of failure
-      chrome.runtime.sendMessage({ type: 'AREA_CAPTURE_RESULT', ok: false, error: err.message });
+      delete window.__smartshotActive;
+      // Only notify if not cancelled by user
+      if (err.message !== 'Cancelled' && err.message !== 'Selection too small') {
+        chrome.runtime.sendMessage({ type: 'AREA_CAPTURE_RESULT', ok: false, error: err.message });
+      }
       return;
     }
 
@@ -175,6 +186,8 @@
 
     // Send result to background (popup may be closed)
     chrome.runtime.sendMessage({ type: 'AREA_CAPTURE_RESULT', ok: true, dataUrl: result });
+    // Reset flag so extension can be used again without reload
+    delete window.__smartshotActive;
   }
 
   // ─── Full page capture ───────────────────────────────────────────────────────

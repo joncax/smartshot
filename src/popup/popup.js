@@ -137,16 +137,36 @@ async function startCapture() {
 
     if (!response?.ok) throw new Error(response?.error ?? 'Capture failed');
 
-    if (currentDest === 'clipboard' || currentDest === 'both') {
-      await copyToClipboard(response.dataUrl);
-    }
-
+    // Save to file via background
     await chrome.runtime.sendMessage({
       type:     'SAVE_SCREENSHOT',
       dataUrl:  response.dataUrl,
       url:      tab.url,
       settings: { ...settings, action: currentDest === 'clipboard' ? 'none' : currentDest },
     });
+
+    // Clipboard — try/catch separately so file save still works if clipboard fails
+    let clipboardOk = false;
+    if (currentDest === 'clipboard' || currentDest === 'both') {
+      try {
+        await copyToClipboard(response.dataUrl);
+        clipboardOk = true;
+      } catch (clipErr) {
+        console.warn('[SmartShot] clipboard failed:', clipErr.message);
+        showStatus('✓ Saved! (clipboard not supported in this browser)', 'ok');
+        await loadHistory();
+        return;
+      }
+    }
+
+    // Preview tab
+    if (settings.autoPreview) {
+      try {
+        await chrome.tabs.create({ url: response.dataUrl });
+      } catch (e) {
+        console.warn('[SmartShot] preview tab failed:', e.message);
+      }
+    }
 
     const label = currentDest === 'clipboard' ? '✓ Copied to clipboard!'
                 : currentDest === 'both'      ? '✓ Saved + copied!'
@@ -166,20 +186,29 @@ async function startCapture() {
 // ─── Clipboard ────────────────────────────────────────────────────────────────
 
 async function copyToClipboard(dataUrl) {
-  let pngUrl = dataUrl;
-  if (!dataUrl.startsWith('data:image/png')) {
-    const img    = await createImageBitmap(await (await fetch(dataUrl)).blob());
-    const canvas = new OffscreenCanvas(img.width, img.height);
-    canvas.getContext('2d').drawImage(img, 0, 0);
-    const pngBlob = await canvas.convertToBlob({ type: 'image/png' });
-    pngUrl = await new Promise((res) => {
-      const reader = new FileReader();
-      reader.onload = () => res(reader.result);
-      reader.readAsDataURL(pngBlob);
-    });
+  // Convert to PNG blob using regular canvas (works in both Chrome and Firefox)
+  const img = await new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = dataUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = img.width;
+  canvas.height = img.height;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+
+  const pngBlob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+
+  // Try modern Clipboard API first
+  if (navigator.clipboard && navigator.clipboard.write) {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
+    return;
   }
-  const blob = await (await fetch(pngUrl)).blob();
-  await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+
+  // Fallback: not supported
+  throw new Error('Clipboard API not available in this browser');
 }
 
 

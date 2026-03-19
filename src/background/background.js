@@ -88,9 +88,9 @@ async function handleAreaCaptureResult(msg, senderTab) {
   const format         = settings.format || 'jpg';
   const filename       = generateFilename(url, format);
 
-  // Save to file
+  // Save to file — convert to blob URL for Firefox compatibility
   if (dest === 'file' || dest === 'both') {
-    await chrome.downloads.download({ url: msg.dataUrl, filename, saveAs: false });
+    await downloadViaTab(msg.dataUrl, filename);
   }
 
   // Clipboard — inject function into the active tab (has user-gesture context)
@@ -153,7 +153,8 @@ export async function handleSave({ dataUrl, url, settings }) {
   const action   = settings.action;
 
   if (action === 'file' || action === 'both') {
-    await chrome.downloads.download({ url: dataUrl, filename, saveAs: false });
+    // Convert dataUrl to blob URL — required for Firefox downloads API
+    await downloadViaTab(dataUrl, filename);
   }
 
   const base64  = dataUrl.split(',')[1] ?? '';
@@ -171,6 +172,27 @@ export async function handleSave({ dataUrl, url, settings }) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Downloads a file by injecting a click on an anchor into the active tab.
+ * This works in both Chrome and Firefox MV3.
+ */
+async function downloadViaTab(dataUrl, filename) {
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!activeTab) throw new Error('No active tab');
+  await chrome.scripting.executeScript({
+    target: { tabId: activeTab.id },
+    func: (dataUrl, filename) => {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    },
+    args: [dataUrl, filename],
+  });
+}
 
 function resolveScaleNumber(scale) {
   return scale === '2x' ? 2 : scale === '1.5x' ? 1.5 : 1;
