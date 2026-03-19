@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartShot Preview</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0f1117; display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:20px; gap:16px; font-family:system-ui,sans-serif; }
+    #toolbar { display:none; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
+    button { background:#4f7fff; color:#fff; border:none; border-radius:8px; padding:8px 18px; font-size:14px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+    button:hover { opacity:.88; }
+    #btn-close { background:#22263a; color:#e8eaf6; border:0.5px solid #2e3350; }
+    #btn-close:hover { background:#2e3350; }
+    img { max-width:100%; height:auto; border-radius:6px; box-shadow:0 4px 24px rgba(0,0,0,0.5); display:none; }
+    #loading { color:#8b90b0; font-size:14px; margin-top:40px; }
+    #save-msg { display:none; background:rgba(52,199,123,0.15); color:#34c77b; border:0.5px solid rgba(52,199,123,0.3); border-radius:8px; padding:8px 18px; font-size:13px; font-weight:500; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="btn-save">⬇ Save image</button>
+    <button id="btn-close">✕ Close</button>
+    <span id="save-msg">✓ Image saved successfully!</span>
+  </div>
+  <p id="loading">Loading preview...</p>
+  <img id="preview-img" alt="SmartShot Preview">
+  <script src="preview.js"></script>
+</body>
+</html>

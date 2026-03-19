@@ -159,10 +159,10 @@ async function startCapture() {
       }
     }
 
-    // Preview tab
+    // Preview tab — open via background to avoid dataUrl restriction in Firefox
     if (settings.autoPreview) {
       try {
-        await chrome.tabs.create({ url: response.dataUrl });
+        await chrome.runtime.sendMessage({ type: 'OPEN_PREVIEW', dataUrl: response.dataUrl });
       } catch (e) {
         console.warn('[SmartShot] preview tab failed:', e.message);
       }

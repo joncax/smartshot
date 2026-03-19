@@ -44,6 +44,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
+
+  if (msg.type === 'OPEN_PREVIEW') {
+    openPreviewTab(msg.dataUrl).then(() => sendResponse({ ok: true })).catch(console.error);
+    return true;
+  }
 });
 
 // ─── Keyboard shortcut ────────────────────────────────────────────────────────
@@ -119,7 +124,7 @@ async function handleAreaCaptureResult(msg, senderTab) {
 
   // Preview
   if (settings.autoPreview) {
-    await chrome.tabs.create({ url: msg.dataUrl });
+    await openPreviewTab(msg.dataUrl || dataUrl);
   }
 }
 
@@ -164,10 +169,6 @@ export async function handleSave({ dataUrl, url, settings }) {
   const updated = addToHistory(current, entry, settings.historyMax || 10);
   await chrome.storage.local.set({ history: updated });
 
-  if (settings.autoPreview) {
-    await chrome.tabs.create({ url: dataUrl });
-  }
-
   return { ok: true, filename, bytes };
 }
 
@@ -192,6 +193,17 @@ async function downloadViaTab(dataUrl, filename) {
     },
     args: [dataUrl, filename],
   });
+}
+
+/**
+ * Opens a preview tab showing the screenshot.
+ * Saves dataUrl to storage.local and opens the extension preview page.
+ * Avoids URL length limits in Firefox with large dataUrls.
+ */
+async function openPreviewTab(dataUrl) {
+  await chrome.storage.local.set({ previewDataUrl: dataUrl });
+  const previewUrl = chrome.runtime.getURL('src/preview/preview.html');
+  await chrome.tabs.create({ url: previewUrl });
 }
 
 function resolveScaleNumber(scale) {
