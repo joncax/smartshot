@@ -190,6 +190,55 @@
     delete window.__smartshotActive;
   }
 
+  // ─── Scroll container detection (Options A + C) ─────────────────────────────
+
+  /**
+   * Finds the best scrollable container to capture.
+   * 1. If body/documentElement has real scroll → use window (normal pages)
+   * 2. Otherwise → find the largest scrollable container (SPAs: Jira, Grafana, etc.)
+   */
+  function findScrollTarget() {
+    const bodyH = Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight
+    );
+    const viewH = window.innerHeight;
+
+    // Option A: body has real scroll content
+    if (bodyH > viewH + 50) {
+      return { el: null, useWindow: true };
+    }
+
+    // Option C: find largest scrollable container
+    let best = null;
+    let bestArea = 0;
+
+    document.querySelectorAll('*').forEach((el) => {
+      // Skip tiny or hidden elements
+      if (el.scrollHeight <= el.clientHeight + 10) return;
+      if (el.clientHeight < 100 || el.clientWidth < 100) return;
+
+      const style = window.getComputedStyle(el);
+      const overflow = style.overflow + style.overflowY;
+      if (!/auto|scroll/.test(overflow)) return;
+
+      // Prefer elements with more scrollable content
+      const scrollable = el.scrollHeight - el.clientHeight;
+      const area = el.clientWidth * scrollable;
+      if (area > bestArea) {
+        bestArea = area;
+        best = el;
+      }
+    });
+
+    if (best && bestArea > 10000) {
+      return { el: best, useWindow: false };
+    }
+
+    // Fallback to window
+    return { el: null, useWindow: true };
+  }
+
   // ─── Full page capture ───────────────────────────────────────────────────────
 
   async function captureFullPage(options = {}) {
@@ -198,9 +247,22 @@
     if (delay > 0) await showCountdown(delay);
     await sleep(80);
 
+    // Detect best scroll target
+    const target = findScrollTarget();
+
+    if (target.useWindow) {
+      return captureWindowScroll({ scale, maxHeight, format });
+    } else {
+      return captureContainerScroll({ scale, maxHeight, format, container: target.el });
+    }
+  }
+
+  // ─── Capture via window scroll (normal pages) ────────────────────────────────
+
+  async function captureWindowScroll({ scale, maxHeight, format }) {
     const scrollX   = window.scrollX;
     const scrollY   = window.scrollY;
-    const realH     = document.body.scrollHeight;
+    const realH     = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
     const truncated = realH > maxHeight;
     const totalH    = Math.min(realH, maxHeight);
     const viewW     = window.innerWidth;
@@ -225,6 +287,77 @@
     sendProgress(92);
     restoreFixed(fixedEls);
     window.scrollTo(scrollX, scrollY);
+
+    if (truncated) showMaxHeightWarning();
+
+    const canvas = await stitchFrames(frames, viewW, totalH, viewH, scale);
+    sendProgress(98);
+
+    const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+    const quality  = format === 'png' ? undefined : 0.92;
+    const result   = canvas.toDataURL(mimeType, quality);
+
+    sendProgress(100);
+    delete window.__smartshotActive;
+    return result;
+  }
+
+  // ─── Capture via container scroll (SPAs: Jira, Grafana, dashboards) ──────────
+
+  async function captureContainerScroll({ scale, maxHeight, format, container }) {
+    const rect      = container.getBoundingClientRect();
+    const savedScrollTop = container.scrollTop;
+    const realH     = container.scrollHeight;
+    const truncated = realH > maxHeight;
+    const totalH    = Math.min(realH, maxHeight);
+    const viewH     = container.clientHeight;
+    const viewW     = container.clientWidth;
+    const contLeft  = rect.left;
+    const contTop   = rect.top;
+
+    // Show overlay to indicate which container is being captured
+    const indicator = makeOverlay(`Capturing scrollable area (${viewW}×${totalH}px)`);
+    document.body.appendChild(indicator);
+    await sleep(600);
+    indicator.remove();
+
+    container.scrollTop = 0;
+    await sleep(150);
+
+    const frames = [];
+    let captured = 0;
+
+    while (captured < totalH) {
+      sendProgress(Math.round((captured / totalH) * 88));
+
+      // Capture visible viewport
+      const fullDataUrl = await chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE' });
+
+      // Crop to just the container area from the full screenshot
+      const img = await loadImage(fullDataUrl);
+      const dpr = window.devicePixelRatio || 1;
+
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width  = Math.round(viewW * dpr);
+      cropCanvas.height = Math.round(viewH * dpr);
+      const ctx = cropCanvas.getContext('2d');
+      ctx.drawImage(
+        img,
+        contLeft * dpr, contTop * dpr, viewW * dpr, viewH * dpr,
+        0, 0, cropCanvas.width, cropCanvas.height
+      );
+
+      frames.push({ dataUrl: cropCanvas.toDataURL('image/png'), y: captured });
+
+      captured += viewH;
+      if (captured < totalH) {
+        container.scrollTop = captured;
+        await sleep(160);
+      }
+    }
+
+    sendProgress(92);
+    container.scrollTop = savedScrollTop;
 
     if (truncated) showMaxHeightWarning();
 
