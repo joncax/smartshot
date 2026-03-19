@@ -82,7 +82,7 @@ async function startCapture() {
   if (captureMode === 'area') {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ['src/content/content.js'],
+      files: ['/src/content/content.js'],
     });
 
     // Store pending info (dest, settings, url) for background to use
@@ -120,7 +120,7 @@ async function startCapture() {
   try {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ['src/content/content.js'],
+      files: ['/src/content/content.js'],
     });
 
     const response = await new Promise((resolve) => {

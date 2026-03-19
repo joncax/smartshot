@@ -56,7 +56,7 @@ async function triggerCapture() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !isCapturableUrl(tab.url)) return;
   const settings = await getSettings();
-  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['src/content/content.js'] });
+  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['/src/content/content.js'] });
   chrome.tabs.sendMessage(tab.id, {
     type: 'START_CAPTURE',
     options: {
